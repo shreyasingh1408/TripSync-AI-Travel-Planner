@@ -12,7 +12,7 @@ TripSync is a full-stack AI-powered travel planning application that helps users
 - 🤖 AI-powered itinerary generation using Gemini
 - 🔄 Natural-language AI itinerary re-planning
 - 🕘 Re-plan history for previous itineraries
-- 🌦️ Destination weather forecasts
+- 🌦️ Destination weather forecasts 
 - 💰 Budget-aware itinerary cost estimation
 - 📅 Multi-day itinerary planning
 - 📱 Responsive dark-themed React UI
