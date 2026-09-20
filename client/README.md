@@ -1,16 +1,89 @@
-# React + Vite
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+# TripSync — AI Travel Planner
 
-Currently, two official plugins are available:
+TripSync is a full-stack AI-powered travel planning application that helps users create personalized trips, generate multi-day itineraries, check destination weather, manage traveller preferences, and modify travel plans using natural-language instructions.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## ✨ Features
 
-## React Compiler
+- 🔐 User authentication with JWT
+- ✈️ Create, edit, and delete trips
+- 🔑 Unique trip join codes
+- 👥 Traveller/member preference management
+- 🤖 AI-powered itinerary generation using Gemini
+- 🔄 Natural-language AI itinerary re-planning
+- 🕘 Re-plan history for previous itineraries
+- 🌦️ Destination weather forecasts
+- 💰 Budget-aware itinerary cost estimation
+- 📅 Multi-day itinerary planning
+- 📱 Responsive dark-themed React UI
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+---
 
-## Expanding the Oxlint configuration
+## 🛠️ Tech Stack
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+### Frontend
+- React
+- React Router
+- Tailwind CSS
+- Vite
+- Fetch API
+
+### Backend
+- Node.js
+- Express.js
+- MongoDB
+- Mongoose
+- JWT
+- bcryptjs
+
+### AI & External APIs
+- Google Gemini API
+- WeatherAPI
+
+---
+
+## 🏗️ Project Architecture
+
+```text
+TripSync/
+│
+├── client/
+│   ├── src/
+│   │   ├── components/
+│   │   ├── pages/
+│   │   ├── App.jsx
+│   │   ├── main.jsx
+│   │   └── index.css
+│   ├── package.json
+│   └── vite.config.js
+│
+├── server/
+│   ├── controllers/
+│   │   ├── aiController.js
+│   │   ├── memberController.js
+│   │   ├── tripController.js
+│   │   ├── weatherController.js
+│   │   └── itineraryController.js
+│   │
+│   ├── models/
+│   │   ├── User.js
+│   │   ├── Trip.js
+│   │   ├── Member.js
+│   │   └── Itinerary.js
+│   │
+│   ├── routes/
+│   │   ├── authRoutes.js
+│   │   ├── tripRoutes.js
+│   │   ├── memberRoutes.js
+│   │   ├── aiRoutes.js
+│   │   ├── weatherRoutes.js
+│   │   └── itineraryRoutes.js
+│   │
+│   ├── middleware/
+│   │   └── authMiddleware.js
+│   │
+│   ├── server.js
+│   └── package.json
+│
+├── .gitignore
+└── README.md

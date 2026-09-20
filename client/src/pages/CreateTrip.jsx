@@ -1,7 +1,9 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 function CreateTrip() {
+  const navigate = useNavigate();
+
   const [formData, setFormData] = useState({
     destination: "",
     startDate: "",
@@ -13,6 +15,7 @@ function CreateTrip() {
   });
 
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const preferencesList = [
     "Adventure",
@@ -27,68 +30,97 @@ function CreateTrip() {
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    setFormData({
-      ...formData,
+    setFormData((prev) => ({
+      ...prev,
       [name]: value,
-    });
+    }));
+
+    setError("");
   };
 
   // Handle trip type
   const handleTripType = (type) => {
-    setFormData({
-      ...formData,
+    setFormData((prev) => ({
+      ...prev,
       tripType: type,
-    });
+    }));
+
+    setError("");
   };
 
   // Handle preferences
   const handlePreference = (preference) => {
-    const alreadySelected =
-      formData.preferences.includes(preference);
+    setFormData((prev) => {
+      const alreadySelected =
+        prev.preferences.includes(preference);
 
-    if (alreadySelected) {
-      setFormData({
-        ...formData,
-        preferences: formData.preferences.filter(
-          (item) => item !== preference
-        ),
-      });
-    } else {
-      setFormData({
-        ...formData,
-        preferences: [
-          ...formData.preferences,
-          preference,
-        ],
-      });
-    }
+      return {
+        ...prev,
+        preferences: alreadySelected
+          ? prev.preferences.filter(
+              (item) => item !== preference
+            )
+          : [...prev.preferences, preference],
+      };
+    });
   };
 
   // Create Trip
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    setLoading(true);
+    setError("");
+
+    if (!formData.destination.trim()) {
+      setError("Please enter a destination.");
+      return;
+    }
+
+    if (!formData.startDate || !formData.endDate) {
+      setError("Please select start and end dates.");
+      return;
+    }
+
+    if (
+      new Date(formData.endDate) <
+      new Date(formData.startDate)
+    ) {
+      setError("End date cannot be before start date.");
+      return;
+    }
+
+    if (Number(formData.travellers) < 1) {
+      setError("Travellers must be at least 1.");
+      return;
+    }
+
+    if (
+      formData.budget === "" ||
+      Number(formData.budget) < 0
+    ) {
+      setError("Please enter a valid budget.");
+      return;
+    }
 
     try {
-      // Get JWT token
+      setLoading(true);
+
       const token = localStorage.getItem("token");
 
       if (!token) {
-        alert("Please login first!");
+        setError("Please login first.");
+        setLoading(false);
         return;
       }
 
-      // Convert frontend trip type
       // Friends -> group
       const backendTripType =
         formData.tripType === "Friends"
           ? "group"
           : formData.tripType.toLowerCase();
 
-      // Data required by backend
       const tripData = {
-        destination: formData.destination,
+        destination: formData.destination.trim(),
 
         startDate: formData.startDate,
 
@@ -113,7 +145,6 @@ function CreateTrip() {
 
       console.log("Sending Trip Data:", tripData);
 
-      // API request
       const response = await fetch(
         "http://localhost:5000/api/trips",
         {
@@ -133,25 +164,24 @@ function CreateTrip() {
 
       console.log("Backend Response:", data);
 
-      // Handle error
       if (!response.ok) {
         throw new Error(
           data.message || "Failed to create trip"
         );
       }
 
-      // Success
       alert(
         `Trip created successfully! 🎉\n\nJoin Code: ${data.trip.joinCode}`
       );
 
-      console.log("Created Trip:", data.trip);
+      navigate(`/trip/${data.trip._id}`);
 
     } catch (error) {
       console.error("Create trip error:", error);
 
-      alert(error.message);
-
+      setError(
+        error.message || "Something went wrong while creating the trip."
+      );
     } finally {
       setLoading(false);
     }
@@ -161,115 +191,214 @@ function CreateTrip() {
     <div className="min-h-screen bg-slate-950 text-white">
 
       {/* Navbar */}
-      <nav className="flex items-center justify-between px-8 py-5 border-b border-slate-800">
+      <nav className="sticky top-0 z-20 border-b border-slate-800/80 bg-slate-950/90 backdrop-blur">
 
-        <Link
-          to="/"
-          className="text-2xl font-bold"
-        >
-          TripSync
-        </Link>
+        <div className="max-w-7xl mx-auto px-6 lg:px-8 py-4 flex items-center justify-between">
 
-        <Link
-          to="/dashboard"
-          className="text-slate-400 hover:text-white"
-        >
-          ← Dashboard
-        </Link>
+          <Link
+            to="/"
+            className="text-2xl font-bold tracking-tight hover:text-blue-400 transition"
+          >
+            TripSync
+          </Link>
+
+          <Link
+            to="/dashboard"
+            className="text-sm text-slate-400 hover:text-white transition"
+          >
+            ← Dashboard
+          </Link>
+
+        </div>
 
       </nav>
 
 
       {/* Main */}
-      <main className="max-w-3xl mx-auto px-6 py-10">
+      <main className="max-w-5xl mx-auto px-6 lg:px-8 py-10">
 
-        {/* Heading */}
-        <div>
-          <h2 className="text-3xl font-bold">
-            Create Your Trip ✈️
-          </h2>
+        {/* Page Heading */}
+        <div className="mb-10">
 
-          <p className="text-slate-400 mt-2">
-            Tell us about your trip and we'll help you plan it.
+          <p className="text-blue-400 text-sm font-semibold uppercase tracking-widest mb-2">
+            New Journey
           </p>
+
+          <h1 className="text-4xl font-bold tracking-tight">
+            Create Your Trip ✈️
+          </h1>
+
+          <p className="text-slate-400 mt-3 max-w-xl">
+            Tell us about your trip and TripSync will use your
+            preferences to help build a personalized itinerary.
+          </p>
+
         </div>
 
 
-        {/* Form */}
+        {/* Error */}
+        {error && (
+          <div className="mb-6 p-4 rounded-xl
+                          bg-red-500/10
+                          border border-red-500/30
+                          text-red-400">
+
+            <div className="flex items-center gap-3">
+              <span>⚠️</span>
+              <p>{error}</p>
+            </div>
+
+          </div>
+        )}
+
+
+        {/* Form Card */}
         <form
           onSubmit={handleSubmit}
-          className="mt-8 space-y-6"
+          className="bg-slate-900/60
+                     border border-slate-800
+                     rounded-3xl
+                     p-6 md:p-8
+                     space-y-8"
         >
 
-          {/* Destination */}
-          <div>
+          {/* Basic Trip Details */}
+          <section>
 
-            <label className="block mb-2 font-medium">
-              Destination
-            </label>
+            <div className="flex items-center gap-3 mb-6">
 
-            <input
-              type="text"
-              name="destination"
-              value={formData.destination}
-              onChange={handleChange}
-              placeholder="e.g. Manali"
-              required
-              className="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-xl outline-none focus:border-blue-500"
-            />
+              <div className="w-10 h-10 rounded-xl
+                              bg-blue-500/10
+                              border border-blue-500/20
+                              flex items-center justify-center">
+                📍
+              </div>
 
-          </div>
+              <div>
+                <h2 className="text-lg font-semibold">
+                  Trip Details
+                </h2>
+
+                <p className="text-sm text-slate-500">
+                  Where and when are you travelling?
+                </p>
+              </div>
+
+            </div>
 
 
-          {/* Dates */}
-          <div className="grid md:grid-cols-2 gap-5">
+            {/* Destination */}
+            <div className="mb-5">
 
-            {/* Start Date */}
-            <div>
-
-              <label className="block mb-2 font-medium">
-                Start Date
+              <label className="block text-sm font-medium mb-2">
+                Destination
               </label>
 
               <input
-                type="date"
-                name="startDate"
-                value={formData.startDate}
+                type="text"
+                name="destination"
+                value={formData.destination}
                 onChange={handleChange}
+                placeholder="e.g. Manali"
                 required
-                className="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-xl outline-none focus:border-blue-500"
+                className="w-full px-4 py-3.5
+                           bg-slate-950
+                           border border-slate-700
+                           rounded-xl
+                           outline-none
+                           placeholder:text-slate-600
+                           focus:border-blue-500
+                           focus:ring-2
+                           focus:ring-blue-500/10
+                           transition"
               />
 
             </div>
 
 
-            {/* End Date */}
-            <div>
+            {/* Dates */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
 
-              <label className="block mb-2 font-medium">
-                End Date
-              </label>
+              <div>
 
-              <input
-                type="date"
-                name="endDate"
-                value={formData.endDate}
-                onChange={handleChange}
-                required
-                className="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-xl outline-none focus:border-blue-500"
-              />
+                <label className="block text-sm font-medium mb-2">
+                  Start Date
+                </label>
+
+                <input
+                  type="date"
+                  name="startDate"
+                  value={formData.startDate}
+                  onChange={handleChange}
+                  required
+                  className="w-full px-4 py-3.5
+                             bg-slate-950
+                             border border-slate-700
+                             rounded-xl
+                             outline-none
+                             focus:border-blue-500
+                             focus:ring-2
+                             focus:ring-blue-500/10
+                             transition"
+                />
+
+              </div>
+
+
+              <div>
+
+                <label className="block text-sm font-medium mb-2">
+                  End Date
+                </label>
+
+                <input
+                  type="date"
+                  name="endDate"
+                  value={formData.endDate}
+                  onChange={handleChange}
+                  required
+                  className="w-full px-4 py-3.5
+                             bg-slate-950
+                             border border-slate-700
+                             rounded-xl
+                             outline-none
+                             focus:border-blue-500
+                             focus:ring-2
+                             focus:ring-blue-500/10
+                             transition"
+                />
+
+              </div>
 
             </div>
 
-          </div>
+          </section>
 
 
           {/* Trip Type */}
-          <div>
+          <section className="pt-2">
 
-            <label className="block mb-3 font-medium">
-              Trip Type
-            </label>
+            <div className="flex items-center gap-3 mb-6">
+
+              <div className="w-10 h-10 rounded-xl
+                              bg-purple-500/10
+                              border border-purple-500/20
+                              flex items-center justify-center">
+                👥
+              </div>
+
+              <div>
+                <h2 className="text-lg font-semibold">
+                  Travel Group
+                </h2>
+
+                <p className="text-sm text-slate-500">
+                  Who are you travelling with?
+                </p>
+              </div>
+
+            </div>
+
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
 
@@ -278,85 +407,155 @@ function CreateTrip() {
                 "Couple",
                 "Family",
                 "Friends",
-              ].map((type) => (
+              ].map((type) => {
 
-                <button
-                  type="button"
-                  key={type}
-                  onClick={() =>
-                    handleTripType(type)
-                  }
-                  className={`py-3 rounded-xl border transition ${
-                    formData.tripType === type
-                      ? "border-blue-500 bg-blue-600"
-                      : "border-slate-700 bg-slate-900 hover:bg-slate-800"
-                  }`}
-                >
+                const selected =
+                  formData.tripType === type;
 
-                  {formData.tripType === type && (
-                    <span className="mr-2">
-                      ✓
-                    </span>
-                  )}
+                return (
+                  <button
+                    type="button"
+                    key={type}
+                    onClick={() => handleTripType(type)}
+                    className={`py-3.5 rounded-xl border
+                                font-medium transition
+                                ${
+                                  selected
+                                    ? "border-blue-500 bg-blue-600 text-white shadow-lg shadow-blue-950/30"
+                                    : "border-slate-700 bg-slate-950 text-slate-300 hover:bg-slate-800 hover:border-slate-600"
+                                }`}
+                  >
 
-                  {type}
+                    {selected && (
+                      <span className="mr-2">
+                        ✓
+                      </span>
+                    )}
 
-                </button>
+                    {type}
 
-              ))}
+                  </button>
+                );
+              })}
 
             </div>
 
-          </div>
+          </section>
 
 
-          {/* Travellers */}
-          <div>
+          {/* Travellers + Budget */}
+          <section className="pt-2">
 
-            <label className="block mb-2 font-medium">
-              Number of Travellers
-            </label>
+            <div className="flex items-center gap-3 mb-6">
 
-            <input
-              type="number"
-              name="travellers"
-              value={formData.travellers}
-              onChange={handleChange}
-              min="1"
-              required
-              className="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-xl outline-none focus:border-blue-500"
-            />
+              <div className="w-10 h-10 rounded-xl
+                              bg-emerald-500/10
+                              border border-emerald-500/20
+                              flex items-center justify-center">
+                💰
+              </div>
 
-          </div>
+              <div>
+                <h2 className="text-lg font-semibold">
+                  Trip Planning
+                </h2>
+
+                <p className="text-sm text-slate-500">
+                  Set your group size and approximate budget.
+                </p>
+              </div>
+
+            </div>
 
 
-          {/* Budget */}
-          <div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
 
-            <label className="block mb-2 font-medium">
-              Approximate Budget (₹)
-            </label>
+              {/* Travellers */}
+              <div>
 
-            <input
-              type="number"
-              name="budget"
-              value={formData.budget}
-              onChange={handleChange}
-              placeholder="e.g. 30000"
-              min="0"
-              required
-              className="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-xl outline-none focus:border-blue-500"
-            />
+                <label className="block text-sm font-medium mb-2">
+                  Number of Travellers
+                </label>
 
-          </div>
+                <input
+                  type="number"
+                  name="travellers"
+                  value={formData.travellers}
+                  onChange={handleChange}
+                  min="1"
+                  required
+                  className="w-full px-4 py-3.5
+                             bg-slate-950
+                             border border-slate-700
+                             rounded-xl
+                             outline-none
+                             focus:border-blue-500
+                             focus:ring-2
+                             focus:ring-blue-500/10
+                             transition"
+                />
+
+              </div>
+
+
+              {/* Budget */}
+              <div>
+
+                <label className="block text-sm font-medium mb-2">
+                  Approximate Budget (₹)
+                </label>
+
+                <input
+                  type="number"
+                  name="budget"
+                  value={formData.budget}
+                  onChange={handleChange}
+                  placeholder="e.g. 30000"
+                  min="0"
+                  required
+                  className="w-full px-4 py-3.5
+                             bg-slate-950
+                             border border-slate-700
+                             rounded-xl
+                             outline-none
+                             placeholder:text-slate-600
+                             focus:border-blue-500
+                             focus:ring-2
+                             focus:ring-blue-500/10
+                             transition"
+                />
+
+              </div>
+
+            </div>
+
+          </section>
 
 
           {/* Preferences */}
-          <div>
+          <section className="pt-2">
 
-            <label className="block mb-3 font-medium">
-              What do you enjoy?
-            </label>
+            <div className="flex items-center gap-3 mb-6">
+
+              <div className="w-10 h-10 rounded-xl
+                              bg-orange-500/10
+                              border border-orange-500/20
+                              flex items-center justify-center">
+                ✨
+              </div>
+
+              <div>
+                <h2 className="text-lg font-semibold">
+                  Travel Preferences
+                </h2>
+
+                <p className="text-sm text-slate-500">
+                  Select the experiences you enjoy.
+                </p>
+              </div>
+
+            </div>
+
 
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
 
@@ -366,115 +565,193 @@ function CreateTrip() {
                   formData.preferences.includes(item);
 
                 return (
-
                   <button
                     type="button"
                     key={item}
                     onClick={() =>
                       handlePreference(item)
                     }
-                    className={`p-3 rounded-xl border text-left transition ${
-                      selected
-                        ? "border-blue-500 bg-blue-600"
-                        : "border-slate-700 bg-slate-900 hover:bg-slate-800"
-                    }`}
+                    className={`p-3.5 rounded-xl
+                                border
+                                text-left
+                                font-medium
+                                transition
+                                ${
+                                  selected
+                                    ? "border-blue-500 bg-blue-600 text-white"
+                                    : "border-slate-700 bg-slate-950 text-slate-300 hover:bg-slate-800 hover:border-slate-600"
+                                }`}
                   >
 
-                    {selected && (
-                      <span className="mr-2">
-                        ✓
-                      </span>
-                    )}
+                    <span
+                      className={`inline-flex w-5 h-5 mr-2
+                                  rounded-md
+                                  items-center justify-center
+                                  text-xs
+                                  ${
+                                    selected
+                                      ? "bg-white/20"
+                                      : "bg-slate-800"
+                                  }`}
+                    >
+                      {selected ? "✓" : ""}
+                    </span>
 
                     {item}
 
                   </button>
-
                 );
               })}
 
             </div>
 
-          </div>
+          </section>
 
 
           {/* Trip Summary */}
-          <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
+          <section
+            className="rounded-2xl
+                       bg-slate-950
+                       border border-slate-800
+                       p-6"
+          >
 
-            <h3 className="font-semibold mb-3">
-              Trip Summary
-            </h3>
+            <div className="flex items-center justify-between mb-5">
 
-            <div className="space-y-2 text-sm text-slate-400">
+              <div>
+                <h2 className="font-semibold text-lg">
+                  Trip Summary
+                </h2>
 
-              <p>
-                <span className="text-white">
-                  Destination:
-                </span>{" "}
-                {formData.destination || "Not selected"}
-              </p>
+                <p className="text-sm text-slate-500 mt-1">
+                  Review your choices before creating the trip.
+                </p>
+              </div>
 
-              <p>
-                <span className="text-white">
-                  Start Date:
-                </span>{" "}
-                {formData.startDate || "Not selected"}
-              </p>
-
-              <p>
-                <span className="text-white">
-                  End Date:
-                </span>{" "}
-                {formData.endDate || "Not selected"}
-              </p>
-
-              <p>
-                <span className="text-white">
-                  Trip Type:
-                </span>{" "}
-                {formData.tripType}
-              </p>
-
-              <p>
-                <span className="text-white">
-                  Travellers:
-                </span>{" "}
-                {formData.travellers}
-              </p>
-
-              <p>
-                <span className="text-white">
-                  Budget:
-                </span>{" "}
-                {formData.budget
-                  ? `₹${formData.budget}`
-                  : "Not selected"}
-              </p>
-
-              <p>
-                <span className="text-white">
-                  Preferences:
-                </span>{" "}
-                {formData.preferences.length > 0
-                  ? formData.preferences.join(", ")
-                  : "None selected"}
-              </p>
+              <span className="text-xl">
+                🧳
+              </span>
 
             </div>
 
-          </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 text-sm">
+
+              <div>
+                <p className="text-slate-500">
+                  Destination
+                </p>
+
+                <p className="text-slate-200 mt-1">
+                  {formData.destination || "Not selected"}
+                </p>
+              </div>
+
+
+              <div>
+                <p className="text-slate-500">
+                  Trip Type
+                </p>
+
+                <p className="text-slate-200 mt-1">
+                  {formData.tripType}
+                </p>
+              </div>
+
+
+              <div>
+                <p className="text-slate-500">
+                  Start Date
+                </p>
+
+                <p className="text-slate-200 mt-1">
+                  {formData.startDate || "Not selected"}
+                </p>
+              </div>
+
+
+              <div>
+                <p className="text-slate-500">
+                  End Date
+                </p>
+
+                <p className="text-slate-200 mt-1">
+                  {formData.endDate || "Not selected"}
+                </p>
+              </div>
+
+
+              <div>
+                <p className="text-slate-500">
+                  Travellers
+                </p>
+
+                <p className="text-slate-200 mt-1">
+                  {formData.travellers}
+                </p>
+              </div>
+
+
+              <div>
+                <p className="text-slate-500">
+                  Budget
+                </p>
+
+                <p className="text-slate-200 mt-1">
+                  {formData.budget
+                    ? `₹${Number(formData.budget).toLocaleString("en-IN")}`
+                    : "Not selected"}
+                </p>
+              </div>
+
+
+              <div className="md:col-span-2">
+
+                <p className="text-slate-500">
+                  Preferences
+                </p>
+
+                <p className="text-slate-200 mt-1">
+                  {formData.preferences.length > 0
+                    ? formData.preferences.join(", ")
+                    : "None selected"}
+                </p>
+
+              </div>
+
+            </div>
+
+          </section>
 
 
           {/* Submit */}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-4 bg-blue-600 rounded-xl font-semibold text-lg hover:bg-blue-700 transition disabled:opacity-50"
-          >
-            {loading
-              ? "Creating Trip..."
-              : "Create Trip →"}
-          </button>
+          <div className="pt-2">
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-4
+                         rounded-xl
+                         bg-blue-600
+                         font-semibold
+                         text-lg
+                         hover:bg-blue-500
+                         transition
+                         disabled:opacity-50
+                         disabled:cursor-not-allowed
+                         shadow-lg
+                         shadow-blue-950/30"
+            >
+              {loading
+                ? "Creating Trip..."
+                : "Create Trip →"}
+            </button>
+
+            <p className="text-center text-xs text-slate-600 mt-3">
+              Your trip will receive a unique join code after creation.
+            </p>
+
+          </div>
 
         </form>
 

@@ -23,6 +23,11 @@ function TripDetails() {
   const [showAddMember, setShowAddMember] = useState(false);
   const [addingMember, setAddingMember] = useState(false);
 
+  const [replanning, setReplanning] = useState(false);
+const [replanInstruction, setReplanInstruction] = useState("");
+const [replanError, setReplanError] = useState("");
+const [showReplan, setShowReplan] = useState(false);
+
   const [newMember, setNewMember] = useState({
     name: "",
     ageGroup: "adult",
@@ -183,6 +188,63 @@ function TripDetails() {
       setGenerating(false);
     }
   };
+
+  // =====================================================
+// RE-PLAN AI ITINERARY
+// =====================================================
+
+const replanAIItinerary = async () => {
+  try {
+    if (!replanInstruction.trim()) {
+      setReplanError(
+        "Please enter how you want to change the itinerary."
+      );
+      return;
+    }
+
+    setReplanning(true);
+    setReplanError("");
+    setAiError("");
+
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      throw new Error("Please login first");
+    }
+
+    const response = await fetch(
+      "http://localhost:5000/api/ai/replan",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          tripId: id,
+          instruction: replanInstruction.trim(),
+        }),
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data.message || "Failed to re-plan itinerary"
+      );
+    }
+
+    setItinerary(data.itinerary);
+    setReplanInstruction("");
+    setShowReplan(false);
+  } catch (error) {
+    console.error("AI re-plan error:", error);
+    setReplanError(error.message);
+  } finally {
+    setReplanning(false);
+  }
+};
 
   // =====================================================
   // DELETE TRIP
@@ -734,47 +796,136 @@ function TripDetails() {
             AI PLANNER
         ================================================= */}
 
-        <section className="mt-10 relative overflow-hidden bg-gradient-to-br from-purple-600/20 via-slate-900 to-blue-600/10 border border-purple-500/20 rounded-3xl p-7 md:p-9">
-          <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-7">
-            <div>
-              <p className="text-purple-400 text-sm font-semibold">
-                SMART TRAVEL
-              </p>
+       {/* =================================================
+    AI PLANNER
+================================================= */}
 
-              <h2 className="text-3xl font-bold mt-2">
-                AI Trip Planner 🤖
-              </h2>
+<section className="mt-10 relative overflow-hidden bg-gradient-to-br from-purple-600/20 via-slate-900 to-blue-600/10 border border-purple-500/20 rounded-3xl p-7 md:p-9">
+  <div className="relative">
 
-              <p className="text-slate-400 mt-3 max-w-2xl">
-                Generate a personalized itinerary using
-                your destination, dates, budget and
-                traveller preferences.
-              </p>
+    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-7">
 
-              {aiError && (
-                <div className="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm">
-                  {aiError}
-                </div>
-              )}
-            </div>
+      <div>
+        <p className="text-purple-400 text-sm font-semibold">
+          SMART TRAVEL
+        </p>
 
-            <button
-              onClick={generateAIItinerary}
-              disabled={generating}
-              className={`px-7 py-3.5 rounded-xl font-semibold transition whitespace-nowrap ${
-                generating
-                  ? "bg-slate-700 text-slate-400 cursor-not-allowed"
-                  : "bg-purple-600 hover:bg-purple-700"
-              }`}
-            >
-              {generating
-                ? "🤖 Generating..."
-                : itinerary
-                ? "✨ Regenerate Plan"
-                : "✨ Generate AI Plan"}
-            </button>
+        <h2 className="text-3xl font-bold mt-2">
+          AI Trip Planner 🤖
+        </h2>
+
+        <p className="text-slate-400 mt-3 max-w-2xl">
+          Generate a personalized itinerary using your
+          destination, dates, budget and traveller
+          preferences.
+        </p>
+
+        {aiError && (
+          <div className="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm">
+            {aiError}
           </div>
-        </section>
+        )}
+      </div>
+
+      <div className="flex flex-col sm:flex-row gap-3">
+
+        {/* GENERATE / REGENERATE */}
+        <button
+          onClick={generateAIItinerary}
+          disabled={generating || replanning}
+          className={`px-7 py-3.5 rounded-xl font-semibold transition whitespace-nowrap ${
+            generating || replanning
+              ? "bg-slate-700 text-slate-400 cursor-not-allowed"
+              : "bg-purple-600 hover:bg-purple-700"
+          }`}
+        >
+          {generating
+            ? "🤖 Generating..."
+            : itinerary
+            ? "✨ Regenerate Plan"
+            : "✨ Generate AI Plan"}
+        </button>
+
+        {/* RE-PLAN */}
+        {itinerary && (
+          <button
+            type="button"
+            onClick={() => {
+              setShowReplan(!showReplan);
+              setReplanError("");
+            }}
+            disabled={generating || replanning}
+            className="px-7 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 font-semibold transition whitespace-nowrap disabled:opacity-50"
+          >
+            🔄 Re-plan Trip
+          </button>
+        )}
+
+      </div>
+    </div>
+
+    {/* RE-PLAN FORM */}
+
+    {showReplan && itinerary && (
+      <div className="mt-7 p-5 md:p-6 bg-slate-900/80 border border-blue-500/20 rounded-2xl">
+
+        <h3 className="text-lg font-bold">
+          Change your itinerary ✨
+        </h3>
+
+        <p className="text-sm text-slate-400 mt-2">
+          Tell the AI what you want to change in your
+          current itinerary.
+        </p>
+
+        <textarea
+          value={replanInstruction}
+          onChange={(e) =>
+            setReplanInstruction(e.target.value)
+          }
+          placeholder="Example: Make Day 3 less tiring, remove adventure activities and add family-friendly sightseeing."
+          rows={4}
+          className="w-full mt-4 px-4 py-3 bg-slate-950 border border-slate-700 rounded-xl outline-none focus:border-blue-500 resize-none"
+        />
+
+        {replanError && (
+          <p className="mt-3 text-sm text-red-400">
+            {replanError}
+          </p>
+        )}
+
+        <div className="flex flex-col sm:flex-row gap-3 mt-4">
+
+          <button
+            type="button"
+            onClick={replanAIItinerary}
+            disabled={replanning}
+            className="px-6 py-3 bg-blue-600 rounded-xl font-semibold hover:bg-blue-700 transition disabled:opacity-50"
+          >
+            {replanning
+              ? "🤖 Re-planning..."
+              : "✨ Apply Re-plan"}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setShowReplan(false);
+              setReplanInstruction("");
+              setReplanError("");
+            }}
+            disabled={replanning}
+            className="px-6 py-3 bg-slate-700 rounded-xl font-semibold hover:bg-slate-600 transition disabled:opacity-50"
+          >
+            Cancel
+          </button>
+
+        </div>
+      </div>
+    )}
+
+  </div>
+</section>
 
         {/* =================================================
             ITINERARY
@@ -921,6 +1072,139 @@ function TripDetails() {
                   AI generated estimate
                 </p>
               </div>
+
+              {/* =================================================
+    RE-PLAN HISTORY
+================================================= */}
+
+{itinerary.replanHistory?.length > 0 && (
+  <div className="mt-8">
+
+    <div className="flex items-center justify-between">
+      <div>
+        <p className="text-purple-400 text-sm font-semibold">
+          AI HISTORY
+        </p>
+
+        <h3 className="text-xl font-bold mt-1">
+          Re-plan History 🔄
+        </h3>
+      </div>
+
+      <span className="text-xs text-slate-500">
+        {itinerary.replanHistory.length} change
+        {itinerary.replanHistory.length !== 1 ? "s" : ""}
+      </span>
+    </div>
+
+    <div className="mt-5 space-y-3">
+
+      {itinerary.replanHistory
+        .slice()
+        .reverse()
+        .map((history, index) => (
+          <details
+            key={`${history.createdAt}-${index}`}
+            className="bg-slate-800/50 border border-slate-700 rounded-2xl overflow-hidden"
+          >
+            <summary className="cursor-pointer list-none p-5">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+
+                <div>
+                  <p className="text-sm text-purple-400 font-semibold">
+                    Re-plan #
+                    {itinerary.replanHistory.length - index}
+                  </p>
+
+                  <p className="font-semibold mt-1">
+                    {history.instruction}
+                  </p>
+                </div>
+
+                <p className="text-xs text-slate-500">
+                  {history.createdAt
+                    ? new Date(
+                        history.createdAt
+                      ).toLocaleString("en-IN")
+                    : ""}
+                </p>
+
+              </div>
+            </summary>
+
+            <div className="border-t border-slate-700 p-5">
+
+              <p className="text-sm text-slate-400 mb-4">
+                Previous Plan
+              </p>
+
+              <div className="space-y-3">
+
+                {history.itinerary?.days?.map(
+                  (historyDay, historyDayIndex) => (
+                    <div
+                      key={
+                        historyDay.day ||
+                        historyDayIndex
+                      }
+                      className="bg-slate-900 rounded-xl p-4"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+
+                        <p className="font-semibold">
+                          Day {historyDay.day}
+                        </p>
+
+                        <span className="text-sm text-slate-400">
+                          ₹{historyDay.estimatedDayCost}
+                        </span>
+
+                      </div>
+
+                      <div className="mt-3 space-y-2">
+
+                        {historyDay.activities?.map(
+                          (
+                            activity,
+                            activityIndex
+                          ) => (
+                            <div
+                              key={activityIndex}
+                              className="text-sm text-slate-400"
+                            >
+                              {activityIndex + 1}.{" "}
+                              <span className="text-slate-200">
+                                {activity.name}
+                              </span>
+                            </div>
+                          )
+                        )}
+
+                      </div>
+                    </div>
+                  )
+                )}
+
+              </div>
+
+              <div className="mt-4 text-sm text-slate-400">
+                Previous estimated total:
+
+                <span className="text-white font-semibold ml-2">
+                  ₹
+                  {history.itinerary
+                    ?.estimatedTotalCost || 0}
+                </span>
+              </div>
+
+            </div>
+          </details>
+        ))}
+
+    </div>
+  </div>
+)}
+
             </div>
           )}
         </section>
