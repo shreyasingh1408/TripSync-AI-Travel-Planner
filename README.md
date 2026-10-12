@@ -1,5 +1,9 @@
 \# TripSync — AI Travel Planner
 
+**Live Demo:** [TripSync — AI Travel Planner](https://trip-sync-ai-travel-planner.vercel.app)
+
+**Backend API:** https://tripsync-backend-arvt.onrender.com
+
 
 
 TripSync is a full-stack AI-powered travel planning application that helps users create personalized trips, generate day-by-day itineraries, check destination weather, manage traveller preferences, and modify plans using natural-language instructions.
