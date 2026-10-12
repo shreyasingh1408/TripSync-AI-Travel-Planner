@@ -48,7 +48,7 @@ const [showReplan, setShowReplan] = useState(false);
       }
 
       const response = await fetch(
-        `http://localhost:5000/api/trips/${id}`,
+        `https://tripsync-backend-arvt.onrender.com/api/trips/${id}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -84,7 +84,7 @@ const [showReplan, setShowReplan] = useState(false);
       if (!token) return;
 
       const response = await fetch(
-        `http://localhost:5000/api/itinerary/${id}`,
+        `https://tripsync-backend-arvt.onrender.com/api/itinerary/${id}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -118,7 +118,7 @@ const [showReplan, setShowReplan] = useState(false);
       }
 
       const response = await fetch(
-        `http://localhost:5000/api/weather/${id}`,
+        `https://tripsync-backend-arvt.onrender.com/api/weather/${id}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -159,7 +159,7 @@ const [showReplan, setShowReplan] = useState(false);
       }
 
       const response = await fetch(
-        "http://localhost:5000/api/ai/generate-itinerary",
+        "https://tripsync-backend-arvt.onrender.com/api/ai/generate-itinerary",
         {
           method: "POST",
           headers: {
@@ -213,7 +213,7 @@ const replanAIItinerary = async () => {
     }
 
     const response = await fetch(
-      "http://localhost:5000/api/ai/replan",
+      "https://tripsync-backend-arvt.onrender.com/api/ai/replan",
       {
         method: "POST",
         headers: {
@@ -261,7 +261,7 @@ const replanAIItinerary = async () => {
       const token = localStorage.getItem("token");
 
       const response = await fetch(
-        `http://localhost:5000/api/trips/${id}`,
+        `https://tripsync-backend-arvt.onrender.com/api/trips/${id}`,
         {
           method: "DELETE",
           headers: {
@@ -304,7 +304,7 @@ const replanAIItinerary = async () => {
       const token = localStorage.getItem("token");
 
       const response = await fetch(
-        `http://localhost:5000/api/members/${id}`,
+        `https://tripsync-backend-arvt.onrender.com/api/members/${id}`,
         {
           method: "POST",
           headers: {

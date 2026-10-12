@@ -22,7 +22,7 @@ function Dashboard() {
       }
 
       const response = await fetch(
-        "http://localhost:5000/api/trips",
+        "https://tripsync-backend-arvt.onrender.com/api/trips",
         {
           method: "GET",
           headers: {
@@ -60,7 +60,7 @@ function Dashboard() {
       const token = localStorage.getItem("token");
 
       const response = await fetch(
-        `http://localhost:5000/api/trips/${tripId}`,
+        `https://tripsync-backend-arvt.onrender.com/api/trips/${tripId}`,
         {
           method: "DELETE",
           headers: {

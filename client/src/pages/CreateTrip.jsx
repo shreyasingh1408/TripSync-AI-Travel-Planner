@@ -146,7 +146,7 @@ function CreateTrip() {
       console.log("Sending Trip Data:", tripData);
 
       const response = await fetch(
-        "http://localhost:5000/api/trips",
+        "https://tripsync-backend-arvt.onrender.com/api/trips",
         {
           method: "POST",
 
